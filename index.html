@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="জমির হিসাব ক্যালকুলেটর">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <title>জমির হিসাব ক্যালকুলেটর</title>
+  <style>
+    :root { color-scheme: light; --sky:#38bdf8; --red:#dc2626; --blue:#2563eb; }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; background:#f4f7fb; color:#172033;
+      font-family:system-ui,-apple-system,"Noto Sans Bengali",sans-serif;
+      padding: max(18px, env(safe-area-inset-top)) 14px max(24px, env(safe-area-inset-bottom));
+    }
+    main {
+      width:min(100%,560px); margin:0 auto; background:white;
+      border:1px solid #e3e8ef; border-radius:22px; padding:20px;
+      box-shadow:0 8px 28px rgba(20,40,70,.07);
+    }
+    h1 { font-size:24px; text-align:center; margin:4px 0 22px; }
+    .field { margin:0 0 17px; }
+    label { display:block; font-weight:700; margin:0 0 8px; line-height:1.5; }
+    input {
+      display:block; width:100%; min-height:58px; padding:12px 14px;
+      border:1px solid #aeb8c5; border-radius:11px; background:white;
+      font-size:20pt; color:#172033; outline:none;
+    }
+    input:focus { border:2px solid #64748b; }
+    input.invalid { border:2px solid #dc2626; }
+    input:disabled { background:#f1f5f9; color:#64748b; }
+    .message { color:var(--sky); font-size:15px; line-height:1.55; margin:7px 1px 0; }
+    .actions { display:grid; gap:12px; margin-top:22px; }
+    button {
+      width:100%; min-height:62px; border:0; border-radius:12px;
+      color:white; font-size:19px; font-weight:750; padding:14px 12px;
+      cursor:pointer; touch-action:manipulation;
+    }
+    button:disabled { opacity:.48; cursor:not-allowed; }
+    .calculate { background:var(--red); }
+    .reset { background:var(--blue); }
+    h2 { font-size:19px; margin:20px 0 10px; }
+    .results { border-top:1px solid #e5eaf0; margin-top:20px; padding-top:4px; }
+    .result-line { font-size:20px; font-weight:700; line-height:1.5; padding:5px 0; font-variant-numeric:tabular-nums; }
+    .totals { border-top:1px solid #e5eaf0; margin-top:12px; padding-top:12px; }
+    .total-row { display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-weight:700; }
+    .success {
+      margin-top:16px; padding:15px; border-radius:12px;
+      background:#effaff; border:1px solid #bae6fd; color:var(--sky);
+      font-weight:750; line-height:1.65;
+    }
+    .foot { color:#64748b; text-align:center; font-size:12px; margin:16px 0 0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>জমির হিসাব ক্যালকুলেটর</h1>
+
+  <div class="field">
+    <label for="totalLand">খতিয়ানে মোট জমির পরিমাণ</label>
+    <input id="totalLand" type="text" inputmode="decimal" autocomplete="off" placeholder="খতিয়ানে মোট জমির পরিমাণ">
+    <div class="message" id="err-total" aria-live="polite"></div>
+  </div>
+
+  <div class="field">
+    <label for="appliedLand">আবেদনকৃত জমির পরিমাণ</label>
+    <input id="appliedLand" type="text" inputmode="decimal" autocomplete="off" placeholder="আবেদনকৃত জমির পরিমাণ">
+    <div class="message" id="err-applied" aria-live="polite"></div>
+  </div>
+
+  <div class="field">
+    <label for="dagLand">দাগে মোট জমির পরিমাণ</label>
+    <input id="dagLand" type="text" inputmode="decimal" autocomplete="off" placeholder="দাগে মোট জমির পরিমাণ">
+    <div class="message" id="err-dag" aria-live="polite"></div>
+  </div>
+
+  <div class="actions">
+    <button class="calculate" id="calculate">দাগে হিস‍্যর পরিমাণ</button>
+    <button class="reset" id="reset">পূনরায় করুন</button>
+  </div>
+  <div class="message" id="general-message" role="status" aria-live="polite"></div>
+
+  <section class="results" id="results-section" hidden>
+    <h2>হিসাবের ফলাফল</h2>
+    <div id="result-list"></div>
+    <div class="totals">
+      <div class="total-row"><span>মোট দাগের জমি</span><span id="sum-dag">0.0000</span></div>
+      <div class="total-row"><span>খতিয়ানের মোট জমি</span><span id="sum-total">0.0000</span></div>
+    </div>
+    <div class="success" id="success-message" hidden>
+      খতিয়ানের দাগে জমির পরিমাণ = মোট জমির পরিমাণ সমান হয়েছে !
+    </div>
+  </section>
+  <p class="foot">হিসাব শেষ হলে নীল বোতাম চাপুন নতুন করে শুরু করতে।</p>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const totalInput = $('totalLand');
+  const appliedInput = $('appliedLand');
+  const dagInput = $('dagLand');
+  const calcButton = $('calculate');
+  const fields = [
+    { input: totalInput, error: $('err-total') },
+    { input: appliedInput, error: $('err-applied') },
+    { input: dagInput, error: $('err-dag') }
+  ];
+  let entries = [];
+
+  function parseNumeric(input) {
+    const s = input.trim();
+    if (!s || !/^\d*\.?\d+$/.test(s) && !/^\d+$/.test(s)) return null;
+    const n = Number(s);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+  function fmt(n) { return Number(n).toFixed(4); }
+  function sumDag() { return entries.reduce((sum, item) => sum + item.original, 0); }
+  function target() { return parseNumeric(totalInput.value); }
+  function reached() {
+    const t = target();
+    return t !== null && t > 0 && Math.abs(sumDag() - t) <= 1e-8;
+  }
+  function setError(index, message) {
+    fields[index].input.classList.toggle('invalid', Boolean(message));
+    fields[index].error.textContent = message;
+  }
+  function render() {
+    const hasEntries = entries.length > 0;
+    $('results-section').hidden = !hasEntries;
+    $('result-list').replaceChildren();
+    entries.forEach((item, index) => {
+      const line = document.createElement('div');
+      line.className = 'result-line';
+      line.textContent = `(${index + 1}) ${fmt(item.calculated)} - ${fmt(item.original)}`;
+      $('result-list').appendChild(line);
+    });
+    $('sum-dag').textContent = fmt(sumDag());
+    const t = target();
+    $('sum-total').textContent = t === null ? '0.0000' : fmt(t);
+    $('success-message').hidden = !reached();
+    dagInput.disabled = reached();
+    calcButton.disabled = reached();
+  }
+  function validate() {
+    let ok = true;
+    const parsed = fields.map(({input}, index) => {
+      const n = parseNumeric(input.value);
+      let msg = '';
+      if (n === null) msg = 'সঠিক সংখ্যা দিয়ে ঘরটি পূরন করুন?';
+      if (index === 0 && n === 0) msg = 'খতিয়ানের মোট জমির পরিমাণ শূন্য হতে পারবে না!';
+      if (index === 2 && n !== null) {
+        const t = target();
+        if (t !== null && n > t + 1e-8)
+          msg = 'দাগে মোট জমির পরিমাণ খতিয়ানের মোট জমির পরিমাণের চেয়ে বেশি হতে পারবে না!';
+      }
+      setError(index, msg);
+      if (msg) ok = false;
+      return n;
+    });
+    return {ok, parsed};
+  }
+  fields.forEach(({input}, index) => {
+    input.addEventListener('input', () => {
+      setError(index, '');
+      $('general-message').textContent = '';
+      render();
+    });
+  });
+  calcButton.addEventListener('click', () => {
+    $('general-message').textContent = '';
+    const {ok, parsed} = validate();
+    if (!ok) return;
+    const [total, applied, original] = parsed;
+    if (total <= 0) return;
+    const nextSum = sumDag() + original;
+    if (nextSum > total + 1e-8) {
+      $('general-message').textContent = 'মোট দাগের জমির পরিমাণ খতিয়ানের মোট জমির পরিমাণ অতিক্রম করতে পারবে না!';
+      dagInput.classList.add('invalid');
+      return;
+    }
+    entries.push({original, calculated: (original / total) * applied});
+    // Clear the third input synchronously after saving the successful calculation.
+    dagInput.value = '';
+    setError(2, '');
+    render();
+    dagInput.blur();
+  });
+  $('reset').addEventListener('click', () => {
+    totalInput.value = '';
+    appliedInput.value = '';
+    dagInput.value = '';
+    entries = [];
+    fields.forEach((_, i) => setError(i, ''));
+    $('general-message').textContent = '';
+    render();
+    totalInput.focus();
+  });
+  render();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
