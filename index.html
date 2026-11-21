@@ -8,7 +8,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-  <title>জমির হিসাব ক্যালকুলেটর</title>
+  <title>দাগের হিস্যা</title>
   <style>
     :root { color-scheme: light; --sky:#38bdf8; --red:#dc2626; --blue:#2563eb; }
     * { box-sizing:border-box; }
@@ -22,7 +22,7 @@
       border:1px solid #e3e8ef; border-radius:22px; padding:20px;
       box-shadow:0 8px 28px rgba(20,40,70,.07);
     }
-    h1 { font-size:24px; text-align:center; margin:4px 0 22px; }
+    h1 { font-size:24px; text-align:center; margin:4px 0 22px; color:#2563eb; }
     .field { margin:0 0 17px; }
     label { display:block; font-weight:700; margin:0 0 8px; line-height:1.5; }
     input {
@@ -45,7 +45,9 @@
     .reset { background:var(--blue); }
     h2 { font-size:19px; margin:20px 0 10px; }
     .results { border-top:1px solid #e5eaf0; margin-top:20px; padding-top:4px; }
-    .result-line { display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:20px; font-weight:700; line-height:1.5; padding:7px 0; font-variant-numeric:tabular-nums; }
+    .result-line { display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:20px; font-weight:700; line-height:1.5; padding:8px 10px; font-variant-numeric:tabular-nums; }
+    .result-line:nth-child(odd) { background:#f1f3f5; }
+    .result-line:nth-child(even) { background:#ffffff; }
     .totals { border-top:1px solid #e5eaf0; margin-top:12px; padding-top:12px; }
     .total-row { display:flex; justify-content:space-between; gap:12px; padding:5px 0; color:#dc2626; font-size:13pt; font-weight:400; }
     .success {
@@ -58,7 +60,7 @@
 </head>
 <body>
 <main>
-  <h1>জমির হিসাব ক্যালকুলেটর</h1>
+  <h1>দাগে প্র‍্যপ্ত হিস্যার হিসাব</h1>
 
   <div class="field">
     <label for="totalLand">খতিয়ানে মোট জমির পরিমাণ</label>
