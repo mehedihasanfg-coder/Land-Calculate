@@ -1,6 +1,6 @@
 {
-  "name": "জমির হিসাব ক্যালকুলেটর",
-  "short_name": "জমির হিসাব",
+  "name": "দাগের হিস্যা",
+  "short_name": "দাগের হিস্যা",
   "lang": "bn",
   "start_url": "./",
   "scope": "./",
@@ -8,7 +8,15 @@
   "background_color": "#f4f7fb",
   "theme_color": "#ffffff",
   "icons": [
-    { "src": "./app-icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "./app-icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "./app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }
