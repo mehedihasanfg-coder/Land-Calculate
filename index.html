@@ -45,7 +45,7 @@
     .reset { background:var(--blue); }
     h2 { font-size:19px; margin:20px 0 10px; }
     .results { border-top:1px solid #e5eaf0; margin-top:20px; padding-top:4px; }
-    .result-line { font-size:20px; font-weight:700; line-height:1.5; padding:5px 0; font-variant-numeric:tabular-nums; }
+    .result-line { display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:20px; font-weight:700; line-height:1.5; padding:7px 0; font-variant-numeric:tabular-nums; }
     .totals { border-top:1px solid #e5eaf0; margin-top:12px; padding-top:12px; }
     .total-row { display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-weight:700; }
     .success {
@@ -86,10 +86,13 @@
 
   <section class="results" id="results-section" hidden>
     <h2>হিসাবের ফলাফল</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-weight:800;padding:8px 0;border-bottom:1px solid #cbd5e1">
+      <div>দাগের মোট জমি</div><div>প্রাপ্ত হিস্যা</div>
+    </div>
     <div id="result-list"></div>
     <div class="totals">
-      <div class="total-row"><span>মোট দাগের জমি</span><span id="sum-dag">0.0000</span></div>
-      <div class="total-row"><span>খতিয়ানের মোট জমি</span><span id="sum-total">0.0000</span></div>
+      <div class="total-row"><span>দাগের মোট জমির যোগফল</span><span id="sum-dag">0.0000</span></div>
+      <div class="total-row"><span>প্রাপ্ত হিস্যার যোগফল</span><span id="sum-total">0.0000</span></div>
     </div>
     <div class="success" id="success-message" hidden>
       খতিয়ানের দাগে জমির পরিমাণ = মোট জমির পরিমাণ সমান হয়েছে !
@@ -120,10 +123,12 @@
   }
   function fmt(n) { return Number(n).toFixed(4); }
   function sumDag() { return entries.reduce((sum, item) => sum + item.original, 0); }
+  function sumShare() { return entries.reduce((sum, item) => sum + item.calculated, 0); }
   function target() { return parseNumeric(totalInput.value); }
+  function appliedTarget() { return parseNumeric(appliedInput.value); }
   function reached() {
-    const t = target();
-    return t !== null && t > 0 && Math.abs(sumDag() - t) <= 1e-8;
+    const t = appliedTarget();
+    return t !== null && t >= 0 && Math.abs(sumDag() - t) <= 1e-8;
   }
   function setError(index, message) {
     fields[index].input.classList.toggle('invalid', Boolean(message));
@@ -136,12 +141,15 @@
     entries.forEach((item, index) => {
       const line = document.createElement('div');
       line.className = 'result-line';
-      line.textContent = `(${index + 1}) ${fmt(item.calculated)} - ${fmt(item.original)}`;
+      const first = document.createElement('div');
+      const second = document.createElement('div');
+      first.textContent = fmt(item.original);
+      second.textContent = fmt(item.calculated);
+      line.append(first, second);
       $('result-list').appendChild(line);
     });
     $('sum-dag').textContent = fmt(sumDag());
-    const t = target();
-    $('sum-total').textContent = t === null ? '0.0000' : fmt(t);
+    $('sum-total').textContent = fmt(sumShare());
     $('success-message').hidden = !reached();
     dagInput.disabled = reached();
     calcButton.disabled = reached();
@@ -178,8 +186,14 @@
     const [total, applied, original] = parsed;
     if (total <= 0) return;
     const nextSum = sumDag() + original;
-    if (nextSum > total + 1e-8) {
-      $('general-message').textContent = 'মোট দাগের জমির পরিমাণ খতিয়ানের মোট জমির পরিমাণ অতিক্রম করতে পারবে না!';
+    if (nextSum > applied + 1e-8) {
+      $('general-message').textContent = 'দাগের মোট জমির যোগফল আবেদনকৃত জমির পরিমাণ অতিক্রম করতে পারবে না!';
+      dagInput.classList.add('invalid');
+      return;
+    }
+    const nextShare = sumShare() + (original / total) * applied;
+    if (nextShare > total + 1e-8) {
+      $('general-message').textContent = 'প্রাপ্ত হিস্যার যোগফল খতিয়ানের মোট জমির পরিমাণ অতিক্রম করতে পারবে না!';
       dagInput.classList.add('invalid');
       return;
     }
