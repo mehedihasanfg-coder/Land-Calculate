@@ -45,7 +45,7 @@
     .reset { background:var(--blue); }
     h2 { font-size:19px; margin:20px 0 10px; }
     .results { border-top:1px solid #e5eaf0; margin-top:20px; padding-top:4px; }
-    .result-line { display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:20px; font-weight:700; line-height:1.5; padding:7px 0; font-variant-numeric:tabular-nums; }
+    .result-line { display:grid; grid-template-columns:34px 1fr 1fr; align-items:center; gap:8px; font-size:20px; font-weight:700; line-height:1.5; padding:7px 0; font-variant-numeric:tabular-nums; }\n    .correct-entry { width:30px; min-height:30px; height:30px; padding:0; border-radius:50%; background:#dc2626; color:#fff; font-size:23px; font-weight:800; line-height:1; }\n    .result-line.correcting { background:#fff1f2 !important; }
     .totals { border-top:1px solid #e5eaf0; margin-top:12px; padding-top:12px; }
     .total-row { display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-weight:700; }
     .success {
@@ -113,7 +113,7 @@
     { input: appliedInput, error: $('err-applied') },
     { input: dagInput, error: $('err-dag') }
   ];
-  let entries = [];
+  let entries = [];\n  let correctionIndex = null;
 
   function parseNumeric(input) {
     const s = input.trim();
@@ -185,19 +185,19 @@
     if (!ok) return;
     const [total, applied, original] = parsed;
     if (total <= 0) return;
-    const nextSum = sumDag() + original;
+    const previousEntry = correctionIndex === null ? null : entries[correctionIndex];\n    const nextSum = sumDag() - (previousEntry ? previousEntry.original : 0) + original;
     if (nextSum > applied + 1e-8) {
       $('general-message').textContent = 'দাগের মোট জমির যোগফল আবেদনকৃত জমির পরিমাণ অতিক্রম করতে পারবে না!';
       dagInput.classList.add('invalid');
       return;
     }
-    const nextShare = sumShare() + (original / total) * applied;
+    const newShare = (original / total) * applied;\n    const nextShare = sumShare() - (previousEntry ? previousEntry.calculated : 0) + newShare;
     if (nextShare > total + 1e-8) {
       $('general-message').textContent = 'প্রাপ্ত হিস্যার যোগফল খতিয়ানের মোট জমির পরিমাণ অতিক্রম করতে পারবে না!';
       dagInput.classList.add('invalid');
       return;
     }
-    entries.push({original, calculated: (original / total) * applied});
+    if (correctionIndex !== null) {\n      entries[correctionIndex] = {original, calculated: newShare};\n      correctionIndex = null;\n    } else {\n      entries.push({original, calculated: newShare});\n    }
     // Clear the third input synchronously after saving the successful calculation.
     dagInput.value = '';
     setError(2, '');
