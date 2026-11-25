@@ -45,7 +45,9 @@
     .reset { background:var(--blue); }
     h2 { font-size:19px; margin:20px 0 10px; }
     .results { border-top:1px solid #e5eaf0; margin-top:20px; padding-top:4px; }
-    .result-line { display:grid; grid-template-columns:34px 1fr 1fr; align-items:center; gap:8px; font-size:20px; font-weight:700; line-height:1.5; padding:7px 0; font-variant-numeric:tabular-nums; }\n    .correct-entry { width:30px; min-height:30px; height:30px; padding:0; border-radius:50%; background:#dc2626; color:#fff; font-size:23px; font-weight:800; line-height:1; }\n    .result-line.correcting { background:#fff1f2 !important; }
+    .result-line { display:grid; grid-template-columns:34px 1fr 1fr; align-items:center; gap:8px; font-size:20px; font-weight:700; line-height:1.5; padding:7px 0; font-variant-numeric:tabular-nums; }
+    .correct-entry { width:30px; min-height:30px; height:30px; padding:0; border-radius:50%; background:#dc2626; color:#fff; font-size:23px; font-weight:800; line-height:1; }
+    .result-line.correcting { background:#fff1f2 !important; }
     .totals { border-top:1px solid #e5eaf0; margin-top:12px; padding-top:12px; }
     .total-row { display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-weight:700; }
     .success {
@@ -113,7 +115,8 @@
     { input: appliedInput, error: $('err-applied') },
     { input: dagInput, error: $('err-dag') }
   ];
-  let entries = [];\n  let correctionIndex = null;
+  let entries = [];
+  let correctionIndex = null;
 
   function parseNumeric(input) {
     const s = input.trim();
@@ -140,19 +143,33 @@
     $('result-list').replaceChildren();
     entries.forEach((item, index) => {
       const line = document.createElement('div');
-      line.className = 'result-line';
+      line.className = 'result-line' + (correctionIndex === index ? ' correcting' : '');
+      const correctButton = document.createElement('button');
+      correctButton.type = 'button';
+      correctButton.className = 'correct-entry';
+      correctButton.textContent = '−';
+      correctButton.setAttribute('aria-label', `দাগের ${index + 1} নম্বর হিসাব সংশোধন করুন`);
+      correctButton.title = 'এই হিসাবটি সংশোধন করুন';
+      correctButton.addEventListener('click', () => {
+        correctionIndex = index;
+        dagInput.value = '';
+        setError(2, '');
+        $('general-message').textContent = `দাগের ${index + 1} নম্বর হিসাবটি সংশোধন করুন। সঠিক পরিমাণ লিখে হিসাব করুন।`;
+        render();
+        dagInput.focus();
+      });
       const first = document.createElement('div');
       const second = document.createElement('div');
       first.textContent = fmt(item.original);
       second.textContent = fmt(item.calculated);
-      line.append(first, second);
+      line.append(correctButton, first, second);
       $('result-list').appendChild(line);
     });
     $('sum-dag').textContent = fmt(sumDag());
     $('sum-total').textContent = fmt(sumShare());
     $('success-message').hidden = !reached();
-    dagInput.disabled = reached();
-    calcButton.disabled = reached();
+    dagInput.disabled = reached() && correctionIndex === null;
+    calcButton.disabled = reached() && correctionIndex === null;
   }
   function validate() {
     let ok = true;
@@ -185,19 +202,26 @@
     if (!ok) return;
     const [total, applied, original] = parsed;
     if (total <= 0) return;
-    const previousEntry = correctionIndex === null ? null : entries[correctionIndex];\n    const nextSum = sumDag() - (previousEntry ? previousEntry.original : 0) + original;
+    const previousEntry = correctionIndex === null ? null : entries[correctionIndex];
+    const nextSum = sumDag() - (previousEntry ? previousEntry.original : 0) + original;
     if (nextSum > applied + 1e-8) {
       $('general-message').textContent = 'দাগের মোট জমির যোগফল আবেদনকৃত জমির পরিমাণ অতিক্রম করতে পারবে না!';
       dagInput.classList.add('invalid');
       return;
     }
-    const newShare = (original / total) * applied;\n    const nextShare = sumShare() - (previousEntry ? previousEntry.calculated : 0) + newShare;
+    const newShare = (original / total) * applied;
+    const nextShare = sumShare() - (previousEntry ? previousEntry.calculated : 0) + newShare;
     if (nextShare > total + 1e-8) {
       $('general-message').textContent = 'প্রাপ্ত হিস্যার যোগফল খতিয়ানের মোট জমির পরিমাণ অতিক্রম করতে পারবে না!';
       dagInput.classList.add('invalid');
       return;
     }
-    if (correctionIndex !== null) {\n      entries[correctionIndex] = {original, calculated: newShare};\n      correctionIndex = null;\n    } else {\n      entries.push({original, calculated: newShare});\n    }
+    if (correctionIndex !== null) {
+      entries[correctionIndex] = {original, calculated: newShare};
+      correctionIndex = null;
+    } else {
+      entries.push({original, calculated: newShare});
+    }
     // Clear the third input synchronously after saving the successful calculation.
     dagInput.value = '';
     setError(2, '');
@@ -209,6 +233,7 @@
     appliedInput.value = '';
     dagInput.value = '';
     entries = [];
+    correctionIndex = null;
     fields.forEach((_, i) => setError(i, ''));
     $('general-message').textContent = '';
     render();
