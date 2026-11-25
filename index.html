@@ -45,11 +45,14 @@
     .reset { background:var(--blue); }
     h2 { font-size:19px; margin:20px 0 10px; }
     .results { border-top:1px solid #e5eaf0; margin-top:20px; padding-top:4px; }
-    .result-line { display:grid; grid-template-columns:34px 1fr 1fr; align-items:center; gap:8px; font-size:20px; font-weight:700; line-height:1.5; padding:7px 0; font-variant-numeric:tabular-nums; }
+    .result-line { display:grid; grid-template-columns:34px minmax(0, 1fr) minmax(0, 1fr); align-items:center; gap:8px; font-size:20px; font-weight:700; line-height:1.5; padding:8px 10px; font-variant-numeric:tabular-nums; }
     .correct-entry { width:30px; min-height:30px; height:30px; padding:0; border-radius:50%; background:#dc2626; color:#fff; font-size:23px; font-weight:800; line-height:1; }
+    .result-line:nth-child(odd) { background:#f1f3f5; }
+    .result-line:nth-child(even) { background:#ffffff; }
     .result-line.correcting { background:#fff1f2 !important; }
+    .reset-result { margin:12px 0 4px; }
     .totals { border-top:1px solid #e5eaf0; margin-top:12px; padding-top:12px; }
-    .total-row { display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-weight:700; }
+    .total-row { display:flex; justify-content:space-between; gap:12px; padding:5px 0; color:#dc2626; font-size:13pt; font-weight:400; }
     .success {
       margin-top:16px; padding:15px; border-radius:12px;
       background:#effaff; border:1px solid #bae6fd; color:var(--sky);
@@ -83,7 +86,6 @@
 
   <div class="actions">
     <button class="calculate" id="calculate">দাগে হিস‍্যর পরিমাণ</button>
-    <button class="reset" id="reset">পূনরায় করুন</button>
   </div>
   <div class="message" id="general-message" role="status" aria-live="polite"></div>
 
@@ -93,12 +95,15 @@
       <div></div><div>দাগের মোট জমি</div><div>প্রাপ্ত হিস্যা</div>
     </div>
     <div id="result-list"></div>
+    <div class="reset-result">
+      <button class="reset" id="reset">পূনরায় করুন</button>
+    </div>
     <div class="totals">
       <div class="total-row"><span>দাগের মোট জমির যোগফল</span><span id="sum-dag">0.0000</span></div>
       <div class="total-row"><span>প্রাপ্ত হিস্যার যোগফল</span><span id="sum-total">0.0000</span></div>
     </div>
     <div class="success" id="success-message" hidden>
-      দাগের মোট জমির যোগফল = আবেদনকৃত জমির পরিমাণ সমান হয়েছে !
+      দাগের মোট জমির যোগফল = খতিয়ানের মোট জমির পরিমাণ সমান হয়েছে !
     </div>
   </section>
   <p class="foot">হিসাব শেষ হলে নীল বোতাম চাপুন নতুন করে শুরু করতে।</p>
@@ -120,19 +125,32 @@
   let correctionIndex = null;
 
   function parseNumeric(input) {
-    const s = input.trim();
-    if (!s || !/^\d*\.?\d+$/.test(s) && !/^\d+$/.test(s)) return null;
+    // Accept English, Bengali and Arabic-Indic digits; commas may be used as grouping separators.
+    const s = String(input).trim()
+      .replace(/[০-৯]/g, ch => String(ch.charCodeAt(0) - 0x09E6))
+      .replace(/[٠-٩]/g, ch => String(ch.charCodeAt(0) - 0x0660))
+      .replace(/[，,٬]/g, '')
+      .replace(/٫/g, '.');
+    if (!s || !/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(s)) return null;
     const n = Number(s);
     return Number.isFinite(n) && n >= 0 ? n : null;
   }
   function fmt(n) { return Number(n).toFixed(4); }
+  function formatInputValue(value) {
+    const n = parseNumeric(value);
+    if (n === null) return value;
+    const fixed = n.toFixed(4);
+    const [integerPart, decimalPart] = fixed.split('.');
+    const paddedInteger = n >= 1 && n < 10 ? integerPart.padStart(2, '0') : integerPart;
+    return paddedInteger + '.' + decimalPart;
+  }
   function sumDag() { return entries.reduce((sum, item) => sum + item.original, 0); }
   function sumShare() { return entries.reduce((sum, item) => sum + item.calculated, 0); }
   function target() { return parseNumeric(totalInput.value); }
   function appliedTarget() { return parseNumeric(appliedInput.value); }
   function reached() {
-    const t = appliedTarget();
-    return t !== null && t >= 0 && Math.abs(sumDag() - t) <= 1e-8;
+    const t = target();
+    return t !== null && t > 0 && Math.abs(sumDag() - t) <= 1e-8;
   }
   function setError(index, message) {
     fields[index].input.classList.toggle('invalid', Boolean(message));
@@ -176,7 +194,7 @@
     });
     $('sum-dag').textContent = fmt(sumDag());
     $('sum-total').textContent = fmt(sumShare());
-    $('success-message').hidden = !reached();
+    $('success-message').hidden = !reached() || correctionIndex !== null;
     dagInput.disabled = reached() && correctionIndex === null;
     calcButton.disabled = reached() && correctionIndex === null;
   }
@@ -204,6 +222,9 @@
       $('general-message').textContent = '';
       render();
     });
+    input.addEventListener('blur', () => {
+      if (input.value.trim() !== '') input.value = formatInputValue(input.value);
+    });
   });
   calcButton.addEventListener('click', () => {
     $('general-message').textContent = '';
@@ -213,8 +234,8 @@
     if (total <= 0) return;
     const previousEntry = correctionIndex === null ? null : entries[correctionIndex];
     const nextSum = sumDag() - (previousEntry ? previousEntry.original : 0) + original;
-    if (nextSum > applied + 1e-8) {
-      $('general-message').textContent = 'দাগের মোট জমির যোগফল আবেদনকৃত জমির পরিমাণ অতিক্রম করতে পারবে না!';
+    if (nextSum > total + 1e-8) {
+      $('general-message').textContent = 'দাগের মোট জমির যোগফল খতিয়ানের মোট জমির পরিমাণ অতিক্রম করতে পারবে না!';
       dagInput.classList.add('invalid');
       return;
     }
