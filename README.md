@@ -31,3 +31,4 @@
 - নীল reset বোতাম সব ঘর ও ফলাফল মুছে দেয়।
 
 নোট: GitHub Pages-এর জন্য repository Public রাখুন। PWA install এবং offline cache কাজ করতে HTTPS প্রয়োজন; GitHub Pages HTTPS দেয়।
+— -
