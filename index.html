@@ -129,6 +129,15 @@
     return Number.isFinite(n) && n >= 0 ? n : null;
   }
   function fmt(n) { return Number(n).toFixed(4); }
+  function formatInputValue(value) {
+    const n = parseNumeric(value);
+    if (n === null) return value;
+    const fixed = n.toFixed(4);
+    const [integerPart, decimalPart] = fixed.split('.');
+    // Keep zero as 0, but pad other single-digit whole numbers (e.g. 5.1 -> 05.1000).
+    const paddedInteger = n >= 1 && n < 10 ? integerPart.padStart(2, '0') : integerPart;
+    return paddedInteger + '.' + decimalPart;
+  }
   function sumDag() { return entries.reduce((sum, item) => sum + item.original, 0); }
   function sumShare() { return entries.reduce((sum, item) => sum + item.calculated, 0); }
   function target() { return parseNumeric(totalInput.value); }
@@ -184,6 +193,9 @@
       setError(index, '');
       $('general-message').textContent = '';
       render();
+    });
+    input.addEventListener('blur', () => {
+      if (input.value.trim() !== '') input.value = formatInputValue(input.value);
     });
   });
   calcButton.addEventListener('click', () => {
