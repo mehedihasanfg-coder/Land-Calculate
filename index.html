@@ -144,9 +144,17 @@
     entries.forEach((item, index) => {
       const line = document.createElement('div');
       line.className = 'result-line' + (correctionIndex === index ? ' correcting' : '');
+      line.style.gridTemplateColumns = '34px minmax(0, 1fr) minmax(0, 1fr)';
       const correctButton = document.createElement('button');
       correctButton.type = 'button';
       correctButton.className = 'correct-entry';
+      correctButton.style.display = 'inline-flex';
+      correctButton.style.alignItems = 'center';
+      correctButton.style.justifyContent = 'center';
+      correctButton.style.width = '30px';
+      correctButton.style.height = '30px';
+      correctButton.style.minHeight = '30px';
+      correctButton.style.padding = '0';
       correctButton.textContent = '−';
       correctButton.setAttribute('aria-label', `দাগের ${index + 1} নম্বর হিসাব সংশোধন করুন`);
       correctButton.title = 'এই হিসাবটি সংশোধন করুন';
