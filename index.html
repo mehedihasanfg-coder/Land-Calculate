@@ -43,6 +43,7 @@
     button:disabled { opacity:.48; cursor:not-allowed; }
     .calculate { background:var(--red); }
     .reset { background:var(--blue); }
+    .reset-result { margin:12px 0 4px; }
     h2 { font-size:19px; margin:20px 0 10px; }
     .results { border-top:1px solid #e5eaf0; margin-top:20px; padding-top:4px; }
     .result-line { display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:20px; font-weight:700; line-height:1.5; padding:8px 10px; font-variant-numeric:tabular-nums; }
@@ -82,7 +83,6 @@
 
   <div class="actions">
     <button class="calculate" id="calculate">দাগে হিস‍্যর পরিমাণ</button>
-    <button class="reset" id="reset">পূনরায় করুন</button>
   </div>
   <div class="message" id="general-message" role="status" aria-live="polite"></div>
 
@@ -92,6 +92,9 @@
       <div>দাগের মোট জমি</div><div>প্রাপ্ত হিস্যা</div>
     </div>
     <div id="result-list"></div>
+    <div class="reset-result">
+      <button class="reset" id="reset">পূনরায় করুন</button>
+    </div>
     <div class="totals">
       <div class="total-row"><span>দাগের মোট জমির যোগফল</span><span id="sum-dag">0.0000</span></div>
       <div class="total-row"><span>প্রাপ্ত হিস্যার যোগফল</span><span id="sum-total">0.0000</span></div>
